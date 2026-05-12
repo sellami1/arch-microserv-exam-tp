@@ -4,10 +4,10 @@ Colorful API endpoint tester for produits-service
 Tests all REST endpoints with detailed error reporting
 """
 
+import os
 import requests
-import json
 from datetime import datetime
-from typing import Dict, Any, Tuple
+from typing import Dict, Any
 
 # ANSI Color codes
 class Colors:
@@ -52,8 +52,12 @@ class Colors:
 
 
 class APITester:
-    def __init__(self, base_url: str = "http://homeserver:8091"):
-        self.base_url = base_url.rstrip('/')
+    def __init__(self, produits_base_url: str = None, avis_base_url: str = None):
+        default_produits = os.getenv("PRODUITS_BASE_URL", "http://localhost:8091")
+        default_avis = os.getenv("AVIS_BASE_URL", default_produits.replace(":8091", ":8092"))
+
+        self.base_url = (produits_base_url or default_produits).rstrip('/')
+        self.avis_base_url = (avis_base_url or default_avis).rstrip('/')
         self.test_results = []
         self.total_tests = 0
         self.passed_tests = 0
@@ -349,9 +353,8 @@ class APITester:
     
     def test_get_avis_by_produit(self, product_id: int = 1) -> None:
         """Test: GET /api/avis/{produitId}"""
-        base_url = self.base_url.replace(":8091", ":8092")
         try:
-            response = requests.get(f"{base_url}/api/avis/{product_id}", timeout=5)
+            response = requests.get(f"{self.avis_base_url}/api/avis/{product_id}", timeout=5)
             
             if response.status_code == 200:
                 data = response.json()
@@ -392,10 +395,9 @@ class APITester:
     
     def test_create_avis(self, avis_data: Dict[str, Any]) -> None:
         """Test: POST /api/avis"""
-        base_url = self.base_url.replace(":8091", ":8092")
         try:
             response = requests.post(
-                f"{base_url}/api/avis",
+                f"{self.avis_base_url}/api/avis",
                 json=avis_data,
                 timeout=5
             )
@@ -438,10 +440,9 @@ class APITester:
     
     def test_create_avis_invalid(self, avis_data: Dict[str, Any]) -> None:
         """Test: POST /api/avis with invalid data"""
-        base_url = self.base_url.replace(":8091", ":8092")
         try:
             response = requests.post(
-                f"{base_url}/api/avis",
+                f"{self.avis_base_url}/api/avis",
                 json=avis_data,
                 timeout=5
             )
@@ -497,9 +498,11 @@ class APITester:
 def main():
     """Main test execution"""
     print(Colors.header("PRODUITS-SERVICE & AVIS-SERVICE API ENDPOINT TESTS"))
-    print(f"\n{Colors.info(f'Testing APIs at: http://homserver:8091 (produits) and http://homserver:8092 (avis)')}\n")
+    produits_url = os.getenv("PRODUITS_BASE_URL", "http://localhost:8091")
+    avis_url = os.getenv("AVIS_BASE_URL", produits_url.replace(":8091", ":8092"))
+    print(f"\n{Colors.info(f'Testing APIs at: {produits_url} (produits) and {avis_url} (avis)')}\n")
     
-    tester = APITester()
+    tester = APITester(produits_base_url=produits_url, avis_base_url=avis_url)
     
     # Test 1: Get all categories
     print(Colors.section("Category Endpoints (produits-service port 8091)"))

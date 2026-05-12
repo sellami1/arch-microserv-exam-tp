@@ -19,6 +19,15 @@ spring:
   application:
     name: avis-service
 
+  cloud:
+    discovery:
+      enabled: false
+
+  autoconfigure:
+    exclude:
+      - org.springframework.cloud.client.discovery.simple.SimpleDiscoveryClientAutoConfiguration
+      - org.springframework.cloud.client.discovery.composite.CompositeDiscoveryClientAutoConfiguration
+
 logging:
   level:
     root: INFO

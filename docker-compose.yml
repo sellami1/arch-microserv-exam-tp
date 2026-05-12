@@ -1,4 +1,12 @@
 services:
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+
   postgres:
     image: postgres:17-alpine
     container_name: produits-postgres
@@ -40,11 +48,14 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      eureka-server:
+        condition: service_started
 
   avis-postgres:
     image: postgres:17-alpine
@@ -74,10 +85,30 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://avis-postgres:5432/avis_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
     depends_on:
       avis-postgres:
         condition: service_healthy
       produits-service:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8090:8090"
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    depends_on:
+      eureka-server:
+        condition: service_started
+      produits-service:
+        condition: service_started
+      avis-service:
         condition: service_started
 
 volumes:

@@ -1,0 +1,25 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        - id: produits-service
+          uri: lb://produits-service
+          predicates:
+            - Path=/api/produits/**, /api/categories/**
+        - id: avis-service
+          uri: lb://avis-service
+          predicates:
+            - Path=/api/avis/**
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}

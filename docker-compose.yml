@@ -4,12 +4,19 @@ services:
       context: ./eureka-server
       dockerfile: Dockerfile
     container_name: eureka-server
+    restart: unless-stopped
     ports:
       - "8761:8761"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8761/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   postgres:
     image: postgres:17-alpine
     container_name: produits-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: produits_db
       POSTGRES_USER: postgres
@@ -27,6 +34,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: produits-redis
+    restart: unless-stopped
     ports:
       - "6379:6379"
     healthcheck:
@@ -40,6 +48,7 @@ services:
       context: ./produits-service
       dockerfile: Dockerfile
     container_name: produits-service
+    restart: unless-stopped
     ports:
       - "8091:8091"
     environment:
@@ -49,17 +58,23 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8091/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
       eureka-server:
-        condition: service_started
+        condition: service_healthy
 
   avis-postgres:
     image: postgres:17-alpine
     container_name: avis-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_DB: avis_db
       POSTGRES_USER: postgres
@@ -79,6 +94,7 @@ services:
       context: ./avis-service
       dockerfile: Dockerfile
     container_name: avis-service
+    restart: unless-stopped
     ports:
       - "8092:8092"
     environment:
@@ -86,30 +102,41 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8092/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     depends_on:
       avis-postgres:
         condition: service_healthy
       produits-service:
-        condition: service_started
+        condition: service_healthy
       eureka-server:
-        condition: service_started
+        condition: service_healthy
 
   api-gateway:
     build:
       context: ./api-gateway
       dockerfile: Dockerfile
     container_name: api-gateway
+    restart: unless-stopped
     ports:
       - "8090:8090"
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8090/actuator/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     depends_on:
       eureka-server:
-        condition: service_started
+        condition: service_healthy
       produits-service:
-        condition: service_started
+        condition: service_healthy
       avis-service:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   postgres_data:

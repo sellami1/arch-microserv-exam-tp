@@ -53,7 +53,7 @@ class Colors:
 
 class APITester:
     def __init__(self, produits_base_url: str = None, avis_base_url: str = None):
-        default_produits = os.getenv("PRODUITS_BASE_URL", "http://homserver:8091")
+        default_produits = os.getenv("PRODUITS_BASE_URL", "http://localhost:8091")
         default_avis = os.getenv("AVIS_BASE_URL", default_produits.replace(":8091", ":8092"))
 
         self.base_url = (produits_base_url or default_produits).rstrip('/')
@@ -498,7 +498,7 @@ class APITester:
 def main():
     """Main test execution"""
     print(Colors.header("PRODUITS-SERVICE & AVIS-SERVICE API ENDPOINT TESTS"))
-    produits_url = os.getenv("PRODUITS_BASE_URL", "http://homserver:8091")
+    produits_url = os.getenv("PRODUITS_BASE_URL", "http://localhost:8091")
     avis_url = os.getenv("AVIS_BASE_URL", produits_url.replace(":8091", ":8092"))
     print(f"\n{Colors.info(f'Testing APIs at: {produits_url} (produits) and {avis_url} (avis)')}\n")
     

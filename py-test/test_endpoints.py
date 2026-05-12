@@ -52,7 +52,7 @@ class Colors:
 
 
 class APITester:
-    def __init__(self, base_url: str = "http://localhost:8091"):
+    def __init__(self, base_url: str = "http://homeserver:8091"):
         self.base_url = base_url.rstrip('/')
         self.test_results = []
         self.total_tests = 0

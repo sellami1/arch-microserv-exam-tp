@@ -15,7 +15,7 @@ services:
 
   postgres:
     image: postgres:17-alpine
-    container_name: produits-postgres
+    container_name: postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: produits_db
@@ -25,6 +25,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d produits_db"]
       interval: 10s
@@ -71,24 +72,6 @@ services:
       eureka-server:
         condition: service_healthy
 
-  avis-postgres:
-    image: postgres:17-alpine
-    container_name: avis-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: avis_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5433:5432"
-    volumes:
-      - avis_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d avis_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   avis-service:
     build:
       context: ./avis-service
@@ -98,7 +81,7 @@ services:
     ports:
       - "8092:8092"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://avis-postgres:5432/avis_db
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/avis_db
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
@@ -108,7 +91,7 @@ services:
       timeout: 5s
       retries: 10
     depends_on:
-      avis-postgres:
+      postgres:
         condition: service_healthy
       produits-service:
         condition: service_healthy
@@ -140,4 +123,3 @@ services:
 
 volumes:
   postgres_data:
-  avis_postgres_data:

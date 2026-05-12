@@ -1,16 +1,22 @@
-# Produits-Service API Test Suite
+# Produits-Service & Avis-Service API Test Suite
 
-Colorful Python test script for the **produits-service** REST API endpoints.
+Colorful Python test script for the **produits-service** and **avis-service** REST API endpoints.
 
 ## Overview
 
-This test suite validates all endpoints of the produits-service microservice:
+This test suite validates all endpoints of both microservices:
+
+### Produits-Service (port 8091)
 - ✓ GET all categories
 - ✓ GET category by ID
 - ✓ GET all products
 - ✓ GET products by category
 - ✓ GET product by ID
 - ✓ POST create product (valid & invalid data)
+
+### Avis-Service (port 8092)
+- ✓ GET all reviews for a product
+- ✓ POST create product review (valid & invalid data)
 
 ## Features
 
@@ -19,6 +25,7 @@ This test suite validates all endpoints of the produits-service microservice:
 - 🔍 **Validation Testing**: Tests both valid and invalid API inputs
 - 📈 **Summary Report**: Final test statistics and success rate
 - 🚫 **Error Handling**: Comprehensive error messages for debugging
+- 🌐 **Multi-Service**: Tests both produits and avis services automatically
 
 ## Setup
 
@@ -49,18 +56,18 @@ Example successful run:
 
 ```
 ======================================================================
-PRODUITS-SERVICE API ENDPOINT TESTS
+PRODUITS-SERVICE & AVIS-SERVICE API ENDPOINT TESTS
 ======================================================================
 
-ℹ Testing API at: http://homserver:8091
+ℹ Testing APIs at: http://homserver:8091 (produits) and http://homserver:8092 (avis)
 
-▶ Category Endpoints
+▶ Category Endpoints (produits-service port 8091)
 ✓ GET /api/categories
   └─ Found 3 categories
 ✓ GET /api/categories/1
   └─ Category: Electronique
 
-▶ Product Endpoints - Read Operations
+▶ Product Endpoints - Read Operations (produits-service port 8091)
 ✓ GET /api/produits
   └─ Found 5 products
 ✓ GET /api/produits/1
@@ -68,23 +75,33 @@ PRODUITS-SERVICE API ENDPOINT TESTS
 ✓ GET /api/produits?categorieId=1
   └─ Found 2 products in category 1
 
-▶ Product Endpoints - Write Operations
+▶ Product Endpoints - Write Operations (produits-service port 8091)
 ✓ POST /api/produits
   └─ Product created: Test Product (ID: 6)
 ✓ POST /api/produits (invalid data validation)
   └─ Correctly rejected invalid data with HTTP 400
 
+▶ Avis Endpoints - Read Operations (avis-service port 8092)
+✓ GET /api/avis/1
+  └─ Found 0 reviews for product 1
+
+▶ Avis Endpoints - Write Operations (avis-service port 8092)
+✓ POST /api/avis
+  └─ Review created for product 1 by Test Reviewer (ID: 1)
+✓ POST /api/avis (invalid data validation)
+  └─ Correctly rejected with HTTP 404
+
 ======================================================================
 TEST SUMMARY REPORT
 ======================================================================
 
-Total Tests: 8
-Passed: 8
+Total Tests: 12
+Passed: 12
 Failed: 0
 
 ✓ All tests passed! (Success rate: 100.0%)
 
-Timestamp: 2026-05-12 14:32:15
+Timestamp: 2026-05-12 14:35:22
 ```
 
 ## Customization
@@ -92,31 +109,38 @@ Timestamp: 2026-05-12 14:32:15
 Edit the `test_endpoints.py` to:
 
 - **Change hostname**: Modify the `base_url` parameter in the `APITester()` initialization
+- **Change ports**: Update the port replacement logic in `test_create_avis()` and `test_get_avis_by_produit()`
 - **Add more tests**: Extend the `APITester` class with additional test methods
-- **Modify test data**: Update the `valid_product` and `invalid_product` dictionaries in `main()`
+- **Modify test data**: Update the `valid_product`, `invalid_product`, `valid_avis`, and `invalid_avis` dictionaries in `main()`
 
 ## Connection Errors
 
 If tests fail with connection errors, verify:
 
-1. **API is running**: `docker compose up` or `mvn spring-boot:run`
-2. **Hostname is correct**: `homserver` should be accessible (edit `/etc/hosts` if needed)
-3. **Port is correct**: Default is `8091`, verify in `application.yml`
-4. **Network**: Ensure network connectivity to the API host
+1. **APIs are running**: `docker compose up` or run services individually
+2. **Hostname is correct**: `homserver` should be accessible
+3. **Ports are correct**: 
+   - produits-service: `8091`
+   - avis-service: `8092`
+4. **Network**: Ensure network connectivity to the API hosts
 
 ## Test Coverage
 
-| Endpoint | Method | Status | Error Handling |
-|----------|--------|--------|---|
-| `/api/categories` | GET | ✓ | Connection, empty response |
-| `/api/categories/{id}` | GET | ✓ | 404, invalid format, connection |
-| `/api/produits` | GET | ✓ | Connection, empty response |
-| `/api/produits?categorieId={id}` | GET | ✓ | Invalid format, connection |
-| `/api/produits/{id}` | GET | ✓ | 404, invalid format, connection |
-| `/api/produits` | POST | ✓ | 400 validation, connection |
+| Service | Endpoint | Method | Status | Error Handling |
+|---------|----------|--------|--------|---|
+| produits-service | `/api/categories` | GET | ✓ | Connection, empty response |
+| produits-service | `/api/categories/{id}` | GET | ✓ | 404, invalid format, connection |
+| produits-service | `/api/produits` | GET | ✓ | Connection, empty response |
+| produits-service | `/api/produits?categorieId={id}` | GET | ✓ | Invalid format, connection |
+| produits-service | `/api/produits/{id}` | GET | ✓ | 404, invalid format, connection |
+| produits-service | `/api/produits` | POST | ✓ | 400 validation, connection |
+| avis-service | `/api/avis/{produitId}` | GET | ✓ | 404, invalid format, connection |
+| avis-service | `/api/avis` | POST | ✓ | 400 validation, 404 product not found, connection |
 
 ## Notes
 
 - **Hostname**: Default is `homserver` (change in `APITester(base_url="...")` if needed)
-- **No cache headers**: Tests do not check Redis cache behavior (cache is transparent to HTTP)
 - **Seed data**: Tests assume initial seed data from `data.sql` is loaded (3 categories, 5 products)
+- **Port switching**: Test script automatically switches from port 8091 to 8092 for avis-service tests
+- **Feign integration**: avis-service validates products exist in produits-service before creating reviews
+

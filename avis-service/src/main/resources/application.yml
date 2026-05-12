@@ -1,0 +1,25 @@
+server:
+  port: 8092
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${SPRING_DATASOURCE_HOST:localhost}:${SPRING_DATASOURCE_PORT:5432}/avis_db
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    defer-datasource-initialization: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  application:
+    name: avis-service
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: DEBUG

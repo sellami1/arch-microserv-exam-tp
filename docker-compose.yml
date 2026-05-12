@@ -46,5 +46,41 @@ services:
       redis:
         condition: service_healthy
 
+  avis-postgres:
+    image: postgres:17-alpine
+    container_name: avis-postgres
+    environment:
+      POSTGRES_DB: avis_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - avis_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d avis_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  avis-service:
+    build:
+      context: ./avis-service
+      dockerfile: Dockerfile
+    container_name: avis-service
+    ports:
+      - "8092:8092"
+    environment:
+      SPRING_DATASOURCE_HOST: avis-postgres
+      SPRING_DATASOURCE_PORT: 5432
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      avis-postgres:
+        condition: service_healthy
+      produits-service:
+        condition: service_started
+
 volumes:
   postgres_data:
+  avis_postgres_data:

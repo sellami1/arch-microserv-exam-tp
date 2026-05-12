@@ -52,7 +52,7 @@ class Colors:
 
 
 class APITester:
-    def __init__(self, base_url: str = "http://localhost:8091"):
+    def __init__(self, base_url: str = "http://homserver:8091"):
         self.base_url = base_url.rstrip('/')
         self.test_results = []
         self.total_tests = 0
@@ -347,6 +347,126 @@ class APITester:
                 str(e)
             )
     
+    def test_get_avis_by_produit(self, product_id: int = 1) -> None:
+        """Test: GET /api/avis/{produitId}"""
+        base_url = self.base_url.replace(":8091", ":8092")
+        try:
+            response = requests.get(f"{base_url}/api/avis/{product_id}", timeout=5)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list):
+                    self.log_test(
+                        f"GET /api/avis/{product_id}",
+                        True,
+                        f"Found {len(data)} reviews for product {product_id}"
+                    )
+                else:
+                    self.log_test(
+                        f"GET /api/avis/{product_id}",
+                        False,
+                        f"Invalid response format",
+                        f"Expected list, got: {type(data)}"
+                    )
+            elif response.status_code == 404:
+                self.log_test(
+                    f"GET /api/avis/{product_id}",
+                    False,
+                    f"HTTP 404 - Product not found",
+                    f"The product with ID {product_id} does not exist"
+                )
+            else:
+                self.log_test(
+                    f"GET /api/avis/{product_id}",
+                    False,
+                    f"HTTP {response.status_code}",
+                    response.text
+                )
+        except Exception as e:
+            self.log_test(
+                f"GET /api/avis/{product_id}",
+                False,
+                f"Connection failed (avis-service on 8092)",
+                str(e)
+            )
+    
+    def test_create_avis(self, avis_data: Dict[str, Any]) -> None:
+        """Test: POST /api/avis"""
+        base_url = self.base_url.replace(":8091", ":8092")
+        try:
+            response = requests.post(
+                f"{base_url}/api/avis",
+                json=avis_data,
+                timeout=5
+            )
+            
+            if response.status_code == 201:
+                data = response.json()
+                self.log_test(
+                    "POST /api/avis",
+                    True,
+                    f"Review created for product {data.get('produitId')} by {data.get('auteur')} (ID: {data.get('id')})"
+                )
+            elif response.status_code == 400:
+                self.log_test(
+                    "POST /api/avis",
+                    False,
+                    f"HTTP 400 - Bad Request",
+                    response.text
+                )
+            elif response.status_code == 404:
+                self.log_test(
+                    "POST /api/avis",
+                    False,
+                    f"HTTP 404 - Product not found",
+                    response.text
+                )
+            else:
+                self.log_test(
+                    "POST /api/avis",
+                    False,
+                    f"HTTP {response.status_code}",
+                    response.text
+                )
+        except Exception as e:
+            self.log_test(
+                "POST /api/avis",
+                False,
+                f"Connection failed (avis-service on 8092)",
+                str(e)
+            )
+    
+    def test_create_avis_invalid(self, avis_data: Dict[str, Any]) -> None:
+        """Test: POST /api/avis with invalid data"""
+        base_url = self.base_url.replace(":8091", ":8092")
+        try:
+            response = requests.post(
+                f"{base_url}/api/avis",
+                json=avis_data,
+                timeout=5
+            )
+            
+            if response.status_code in [400, 404]:
+                self.log_test(
+                    "POST /api/avis (invalid data validation)",
+                    True,
+                    f"Correctly rejected with HTTP {response.status_code}"
+                )
+            else:
+                self.log_test(
+                    "POST /api/avis (invalid data validation)",
+                    False,
+                    f"Expected HTTP 400 or 404, got HTTP {response.status_code}",
+                    "Invalid data should be rejected"
+                )
+        except Exception as e:
+            self.log_test(
+                "POST /api/avis (invalid data validation)",
+                False,
+                f"Connection failed (avis-service on 8092)",
+                str(e)
+            )
+
     def print_summary(self) -> None:
         """Print test summary report"""
         print(Colors.header("TEST SUMMARY REPORT"))
@@ -376,19 +496,19 @@ class APITester:
 
 def main():
     """Main test execution"""
-    print(Colors.header("PRODUITS-SERVICE API ENDPOINT TESTS"))
-    print(f"\n{Colors.info(f'Testing API at: http://homserver:8091')}\n")
+    print(Colors.header("PRODUITS-SERVICE & AVIS-SERVICE API ENDPOINT TESTS"))
+    print(f"\n{Colors.info(f'Testing APIs at: http://homserver:8091 (produits) and http://homserver:8092 (avis)')}\n")
     
     tester = APITester()
     
     # Test 1: Get all categories
-    print(Colors.section("Category Endpoints"))
+    print(Colors.section("Category Endpoints (produits-service port 8091)"))
     categories = tester.test_get_all_categories()
     if categories:
         tester.test_get_category_by_id(categories[0].get('id', 1))
     
     # Test 2: Get all products
-    print(Colors.section("Product Endpoints - Read Operations"))
+    print(Colors.section("Product Endpoints - Read Operations (produits-service port 8091)"))
     products = tester.test_get_all_products()
     if products:
         tester.test_get_product_by_id(products[0].get('id', 1))
@@ -398,7 +518,7 @@ def main():
         tester.test_get_products_by_category(categories[0].get('id', 1))
     
     # Test 4: Create valid product
-    print(Colors.section("Product Endpoints - Write Operations"))
+    print(Colors.section("Product Endpoints - Write Operations (produits-service port 8091)"))
     valid_product = {
         "nom": "Test Product",
         "prix": 99.99,
@@ -415,6 +535,31 @@ def main():
         "categorieId": 99999  # Non-existent category
     }
     tester.test_create_product_invalid(invalid_product)
+    
+    # Test 6: Get avis by product
+    print(Colors.section("Avis Endpoints - Read Operations (avis-service port 8092)"))
+    if products:
+        tester.test_get_avis_by_produit(products[0].get('id', 1))
+    
+    # Test 7: Create valid avis
+    print(Colors.section("Avis Endpoints - Write Operations (avis-service port 8092)"))
+    if products:
+        valid_avis = {
+            "produitId": products[0].get('id', 1),
+            "auteur": "Test Reviewer",
+            "commentaire": "Excellent product, highly recommended!",
+            "note": 5
+        }
+        tester.test_create_avis(valid_avis)
+    
+    # Test 8: Create invalid avis (note out of range)
+    invalid_avis = {
+        "produitId": 99999,  # Non-existent product
+        "auteur": "",  # Empty author
+        "commentaire": "",  # Empty comment
+        "note": 10  # Note should be 1-5
+    }
+    tester.test_create_avis_invalid(invalid_avis)
     
     # Print summary
     tester.print_summary()

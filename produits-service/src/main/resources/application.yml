@@ -16,7 +16,7 @@ spring:
     defer-datasource-initialization: true
   sql:
     init:
-      mode: always_and_drop_existing
+      mode: always
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}

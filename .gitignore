@@ -1,6 +1,6 @@
 tmp.*
-py-test/
-md-plans/
+py-test/*
+md-plans/*
 pull.sh
 push.sh
 exam.md
